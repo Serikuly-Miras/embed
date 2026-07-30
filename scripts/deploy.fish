@@ -7,9 +7,8 @@ end
 
 set PROJECT $argv[1]
 set PROJECT_DIR "projects/$PROJECT"
-set LIBS_FILE "$PROJECT_DIR/libs.txt"
+set DEPLOY_FILE "$PROJECT_DIR/deploy.toml"
 set LIB_FILES
-set STATIC_FILE "$PROJECT_DIR/static.txt"
 set STATIC_FILES
 
 if not test -d "$PROJECT_DIR"
@@ -17,16 +16,14 @@ if not test -d "$PROJECT_DIR"
     exit 1
 end
 
-if test -f "$LIBS_FILE"
-    for name in (cat $LIBS_FILE)
+if test -f "$DEPLOY_FILE"
+    for name in (yq -p toml -oy '.libs // [] | .[]' -r $DEPLOY_FILE)
         if test -n "$name"
             set LIB_FILES $LIB_FILES "libs/$name"
         end
     end
-end
 
-if test -f "$STATIC_FILE"
-    for name in (cat $STATIC_FILE)
+    for name in (yq -p toml -oy '.static // [] | .[]' -r $DEPLOY_FILE)
         if test -n "$name"
             set STATIC_FILES $STATIC_FILES "static/$name"
         end

@@ -1,0 +1,2 @@
+libs = ["wifi.py", "httpserver.py"]
+static = ["favicon.svg"]

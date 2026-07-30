@@ -1,2 +1,0 @@
-wifi.py
-httpserver.py
