@@ -1,3 +1,5 @@
+import json  # type: ignore
+
 import machine  # type: ignore
 from env import FREQUENCY, PORT, WIFI_PASSWORD, WIFI_SSID  # type: ignore
 from httpserver import HTTPServer, build_response  # type: ignore
@@ -47,6 +49,17 @@ def root(request):
 @app.route("/favicon.svg")
 def favicon(request):
     return FAVICON_RESPONSE
+
+
+@app.route("/echo")
+def echo(request):
+    try:
+        data = request.json()
+    except ValueError:
+        return build_response(
+            "400 Bad Request", "application/json", b'{"error":"invalid json"}'
+        )
+    return build_response("200 OK", "application/json", json.dumps(data).encode())
 
 
 app.serve()
