@@ -1,4 +1,8 @@
+import json  # type: ignore
 import socket  # type: ignore
+
+MAX_HEADER_BYTES = 4096
+MAX_BODY_BYTES = 16384
 
 
 def build_response(status, content_type, body):
@@ -6,12 +10,23 @@ def build_response(status, content_type, body):
     return headers.encode() + body
 
 
+class Request:
+    def __init__(self, method, path, headers, body):
+        self.method = method
+        self.path = path
+        self.headers = headers
+        self.body = body
+
+    def json(self):
+        return json.loads(self.body)
+
+
 class HTTPServer:
     def __init__(self, port, led=None):
         self.port = port
         self.routes = {}
         self.led = led  # machine.Pin, blinked (active-low) while handling a request
-        self.not_found = lambda path: build_response(
+        self.not_found = lambda request: build_response(
             "404 Not Found", "text/plain", b"Not Found"
         )
 
@@ -38,19 +53,48 @@ class HTTPServer:
             finally:
                 conn.close()
 
+    def _read_request(self, conn):
+        buf = b""
+        while b"\r\n\r\n" not in buf:
+            chunk = conn.recv(1024)
+            if not chunk:
+                return None
+            buf += chunk
+            if len(buf) > MAX_HEADER_BYTES:
+                raise ValueError("headers too large")
+
+        head, _, rest = buf.partition(b"\r\n\r\n")
+        lines = head.split(b"\r\n")
+        method, path, _ = lines[0].decode().split(" ", 2)
+
+        headers = {}
+        for line in lines[1:]:
+            name, _, value = line.partition(b":")
+            headers[name.decode().strip().lower()] = value.decode().strip()
+
+        content_length = int(headers.get("content-length", 0))
+        if content_length > MAX_BODY_BYTES:
+            raise ValueError("body too large")
+
+        body = rest
+        while len(body) < content_length:
+            chunk = conn.recv(min(1024, content_length - len(body)))
+            if not chunk:
+                break
+            body += chunk
+
+        return Request(method, path, headers, body)
+
     def _handle(self, conn):
         if self.led:
             self.led.value(0)
         try:
-            # Small requests (a GET with a few headers) fit in one recv, avoiding
-            # the extra syscalls readline()-per-header would cost.
-            request = conn.recv(1024)
-            if not request:
+            request = self._read_request(conn)
+            if request is None:
                 return
 
-            path = request.split(b" ", 2)[1].decode()
-            handler = self.routes.get(path, lambda: self.not_found(path))
-            conn.send(handler())
+            handler = self.routes.get(request.path, self.not_found)
+            conn.send(handler(request))
         finally:
             if self.led:
                 self.led.value(1)

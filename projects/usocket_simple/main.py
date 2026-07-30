@@ -28,20 +28,25 @@ connect_wifi(WIFI_SSID, WIFI_PASSWORD)
 
 led = machine.Pin(8, machine.Pin.OUT)
 app = HTTPServer(PORT, led=led)
-app.not_found = lambda path: build_response(
-    "404 Not Found", "text/html", page("404").encode()
-)
+
+# Precompute static responses once at startup instead of re-rendering and
+# re-encoding on every request.
+HOME_RESPONSE = build_response("200 OK", "text/html", page("Hello").encode())
+NOT_FOUND_RESPONSE = build_response("404 Not Found", "text/html", page("404").encode())
+with open("static/favicon.svg", "rb") as f:
+    FAVICON_RESPONSE = build_response("200 OK", "image/svg+xml", f.read())
+
+app.not_found = lambda request: NOT_FOUND_RESPONSE
 
 
 @app.route("/")
-def root():
-    return build_response("200 OK", "text/html", page("Hello").encode())
+def root(request):
+    return HOME_RESPONSE
 
 
 @app.route("/favicon.svg")
-def favicon():
-    with open("static/favicon.svg", "rb") as f:
-        return build_response("200 OK", "image/svg+xml", f.read())
+def favicon(request):
+    return FAVICON_RESPONSE
 
 
 app.serve()
