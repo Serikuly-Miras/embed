@@ -26,7 +26,8 @@ def page(title):
 
 connect_wifi(WIFI_SSID, WIFI_PASSWORD)
 
-app = HTTPServer(PORT)
+led = machine.Pin(8, machine.Pin.OUT)
+app = HTTPServer(PORT, led=led)
 app.not_found = lambda path: build_response(
     "404 Not Found", "text/html", page("404").encode()
 )

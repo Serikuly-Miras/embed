@@ -7,9 +7,10 @@ def build_response(status, content_type, body):
 
 
 class HTTPServer:
-    def __init__(self, port):
+    def __init__(self, port, led=None):
         self.port = port
         self.routes = {}
+        self.led = led  # machine.Pin, blinked (active-low) while handling a request
         self.not_found = lambda path: build_response(
             "404 Not Found", "text/plain", b"Not Found"
         )
@@ -38,12 +39,18 @@ class HTTPServer:
                 conn.close()
 
     def _handle(self, conn):
-        # Small requests (a GET with a few headers) fit in one recv, avoiding
-        # the extra syscalls readline()-per-header would cost.
-        request = conn.recv(1024)
-        if not request:
-            return
+        if self.led:
+            self.led.value(0)
+        try:
+            # Small requests (a GET with a few headers) fit in one recv, avoiding
+            # the extra syscalls readline()-per-header would cost.
+            request = conn.recv(1024)
+            if not request:
+                return
 
-        path = request.split(b" ", 2)[1].decode()
-        handler = self.routes.get(path, lambda: self.not_found(path))
-        conn.send(handler())
+            path = request.split(b" ", 2)[1].decode()
+            handler = self.routes.get(path, lambda: self.not_found(path))
+            conn.send(handler())
+        finally:
+            if self.led:
+                self.led.value(1)
