@@ -9,6 +9,8 @@ set PROJECT $argv[1]
 set PROJECT_DIR "projects/$PROJECT"
 set LIBS_FILE "$PROJECT_DIR/libs.txt"
 set LIB_FILES
+set STATIC_FILE "$PROJECT_DIR/static.txt"
+set STATIC_FILES
 
 if not test -d "$PROJECT_DIR"
     echo "No such project: $PROJECT_DIR" >&2
@@ -19,6 +21,14 @@ if test -f "$LIBS_FILE"
     for name in (cat $LIBS_FILE)
         if test -n "$name"
             set LIB_FILES $LIB_FILES "libs/$name"
+        end
+    end
+end
+
+if test -f "$STATIC_FILE"
+    for name in (cat $STATIC_FILE)
+        if test -n "$name"
+            set STATIC_FILES $STATIC_FILES "static/$name"
         end
     end
 end
@@ -34,6 +44,12 @@ or exit 1
 echo "Deploying $PROJECT..."
 uv run mpremote cp $LIB_FILES $PROJECT_DIR/*.py :
 or exit 1
+
+if test (count $STATIC_FILES) -gt 0
+    uv run mpremote mkdir :static
+    uv run mpremote cp $STATIC_FILES :static/
+    or exit 1
+end
 
 echo "Resetting board..."
 uv run mpremote reset

@@ -13,5 +13,6 @@ def connect_wifi(ssid, password, timeout=15):
             if time.time() - start > timeout:
                 raise RuntimeError("Wi-Fi connection timed out")
             time.sleep(0.5)
+    wlan.config(pm=network.WLAN.PM_NONE)  # disable modem-sleep; cuts request latency a lot
     print("Wi-Fi connected, IP:", wlan.ifconfig()[0])
     return wlan
