@@ -1,0 +1,2 @@
+libs = ["wifi.py", "https.py", "metrics.py"]
+static = ["isrg_root_x1.der"]
