@@ -20,7 +20,6 @@ from wifi import connect_wifi  # type: ignore
 machine.freq(FREQUENCY)
 
 start = time.ticks_ms()
-led = machine.Pin(8, machine.Pin.OUT)
 metrics = Metrics()
 
 
@@ -33,14 +32,12 @@ ntptime.settime()  # RTC starts unset on boot; TLS cert validity checks need rea
 
 payload = json.dumps({"board_id": BOARD_ID, "payload": read_sensor()}).encode()
 
-led.value(1)
 status, _ = post_json(
     API_HOST,
     API_PATH,
     payload,
     headers={"Authorization": f"Bearer {AUTH_TOKEN}"},
 )
-led.value(0)
 print("POST status:", status)
 
 elapsed = time.ticks_diff(time.ticks_ms(), start)

@@ -22,10 +22,9 @@ class Request:
 
 
 class HTTPServer:
-    def __init__(self, port, led=None):
+    def __init__(self, port):
         self.port = port
         self.routes = {}
-        self.led = led  # machine.Pin, blinked (active-low) while handling a request
         self.not_found = lambda request: build_response(
             "404 Not Found", "text/plain", b"Not Found"
         )
@@ -86,15 +85,9 @@ class HTTPServer:
         return Request(method, path, headers, body)
 
     def _handle(self, conn):
-        if self.led:
-            self.led.value(0)
-        try:
-            request = self._read_request(conn)
-            if request is None:
-                return
+        request = self._read_request(conn)
+        if request is None:
+            return
 
-            handler = self.routes.get(request.path, self.not_found)
-            conn.send(handler(request))
-        finally:
-            if self.led:
-                self.led.value(1)
+        handler = self.routes.get(request.path, self.not_found)
+        conn.send(handler(request))

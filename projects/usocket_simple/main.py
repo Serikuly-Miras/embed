@@ -28,8 +28,7 @@ def page(title):
 
 connect_wifi(WIFI_SSID, WIFI_PASSWORD)
 
-led = machine.Pin(8, machine.Pin.OUT)
-app = HTTPServer(PORT, led=led)
+app = HTTPServer(PORT)
 
 # Precompute static responses once at startup instead of re-rendering and
 # re-encoding on every request.
