@@ -50,6 +50,7 @@ end
 
 echo "Resetting board..."
 uv run mpremote reset
+sleep 1
 
 echo "Done. Attaching to console (Ctrl-C to exit)..."
 uv run mpremote
