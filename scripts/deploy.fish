@@ -25,7 +25,20 @@ if test -f "$DEPLOY_FILE"
 
     for name in (yq -p toml -oy '.static // [] | .[]' -r $DEPLOY_FILE)
         if test -n "$name"
-            set STATIC_FILES $STATIC_FILES "static/$name"
+            if test -f "static/$name"
+                set STATIC_FILES $STATIC_FILES "static/$name"
+            else
+                echo "Static file not found in repo static/: $name" >&2
+                exit 1
+            end
+        end
+    end
+end
+
+if test -d "$PROJECT_DIR/static"
+    for f in $PROJECT_DIR/static/*
+        if test -f "$f"
+            set STATIC_FILES $STATIC_FILES "$f"
         end
     end
 end

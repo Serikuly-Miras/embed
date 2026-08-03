@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>{title}</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://esm.sh/@xyflow/react@12/dist/style.css"
+    />
+    <style>
+      * {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      }
+
+      html,
+      body,
+      #root {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        background: #060607;
+        overflow: hidden;
+      }
+
+      .app {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        width: 100vw;
+      }
+
+      .canvas {
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* slim footer */
+      .footer {
+        height: 52px;
+        flex-shrink: 0;
+        background: #0d0d0f;
+        border-top: 1px solid #26262b;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 14px;
+        gap: 16px;
+        color: #cfcfd4;
+        font-size: 12px;
+      }
+
+      .footer-stats {
+        display: flex;
+        gap: 20px;
+        flex-shrink: 0;
+      }
+
+      .pipeline-input {
+        flex: 1;
+        min-width: 0;
+        background: #1f1f23;
+        border: 1px solid #2e2e33;
+        color: #e8e8ea;
+        font-size: 12px;
+        font-family: inherit;
+        padding: 6px 10px;
+        border-radius: 6px;
+      }
+
+      .pipeline-input:focus {
+        outline: none;
+        border-color: #48484f;
+      }
+
+      .pipeline-input::placeholder {
+        color: #6b6b72;
+      }
+
+      .pipeline-input.error {
+        border-color: #ef4444;
+      }
+
+      .stat {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+      }
+
+      .stat span:first-child {
+        color: #6b6b72;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .stat span:last-child {
+        color: #e8e8ea;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .footer-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .btn {
+        background: #1f1f23;
+        border: 1px solid #2e2e33;
+        color: #e8e8ea;
+        font-size: 12px;
+        font-family: inherit;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .btn:hover {
+        background: #29292e;
+      }
+
+      .btn.primary {
+        background: #48484f;
+        border-color: #5a5a62;
+        color: #f5f5f6;
+      }
+
+      .btn.primary:hover {
+        background: #58585f;
+      }
+
+      /* node styling */
+      .cnode {
+        background: #17171a;
+        border: 1px solid #2e2e33;
+        border-radius: 8px;
+        min-width: 160px;
+        color: #e8e8ea;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      }
+
+      .cnode-header {
+        padding: 7px 10px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid #26262b;
+        color: #9a9aa2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .cnode-header .duration {
+        color: #6b6b72;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: normal;
+      }
+
+      .cnode-body {
+        padding: 10px;
+        font-size: 12px;
+        color: #cfcfd4;
+      }
+
+      .cnode-body .value {
+        color: #4ade80;
+        font-weight: 600;
+      }
+
+      /* react flow chrome */
+      .react-flow__controls {
+        background: #17171a;
+        border: 1px solid #2e2e33;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      }
+
+      .react-flow__controls-button {
+        background: #17171a;
+        border-bottom: 1px solid #2e2e33;
+        fill: #cfcfd4;
+      }
+
+      .react-flow__controls-button:hover {
+        background: #26262b;
+      }
+
+      .react-flow__controls-button svg {
+        fill: #cfcfd4;
+      }
+
+      .react-flow__attribution {
+        background: #17171a;
+        border: 1px solid #2e2e33;
+        border-radius: 6px;
+        margin: 13px;
+      }
+
+      .react-flow__attribution a {
+        color: #6b6b72;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18",
+          "react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime",
+          "react-dom": "https://esm.sh/react-dom@18",
+          "react-dom/client": "https://esm.sh/react-dom@18/client",
+          "@xyflow/react": "https://esm.sh/@xyflow/react@12?external=react,react-dom",
+          "htm": "https://esm.sh/htm@3"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import React, { useEffect, useState } from "react";
+      import { createRoot } from "react-dom/client";
+      import htm from "htm";
+      import {
+        ReactFlow,
+        Background,
+        Controls,
+        Handle,
+        Position,
+      } from "@xyflow/react";
+
+      const html = htm.bind(React.createElement);
+
+      function formatArray(values) {
+        if (values.length > 2) {
+          return `[${values.slice(0, 2).join(", ")}, ...]`;
+        }
+        return `[${values.join(", ")}]`;
+      }
+
+      function formatArg(arg) {
+        if (arg.kind === "array") {
+          return formatArray(arg.value);
+        }
+        return String(arg.value);
+      }
+
+      function formatValue(value) {
+        if (Array.isArray(value)) {
+          return formatArray(value);
+        }
+        return String(value);
+      }
+
+      function formatDuration(us) {
+        if (us < 1000) return `${us}us`;
+        return `${(us / 1000).toFixed(1)}ms`;
+      }
+
+      function formatHeader(data) {
+        if (!data.args || data.args.length === 0) return `${data.name}()`;
+        return `${data.name}(${data.args.map(formatArg).join(", ")})`;
+      }
+
+      function BlockNode({ data }) {
+        return html`
+          <div class="cnode">
+            <div class="cnode-header">
+              ${formatHeader(data)}
+              ${data.duration_us != null
+                ? html`<span class="duration"
+                    >${formatDuration(data.duration_us)}</span
+                  >`
+                : null}
+            </div>
+            ${data.value != null
+              ? html`<div class="cnode-body">
+                  <span class="value">${formatValue(data.value)}</span>
+                </div>`
+              : null}
+            <${Handle} type="target" position=${Position.Left} id="in" />
+            <${Handle} type="source" position=${Position.Right} id="out" />
+          </div>
+        `;
+      }
+
+      const nodeTypes = { block: BlockNode };
+
+      function toFlowNodes(nodes) {
+        return nodes.map((n) => ({
+          id: n.id,
+          type: "block",
+          position: n.position,
+          data: {
+            name: n.name,
+            args: n.args,
+            value: n.value,
+            duration_us: n.duration_us,
+          },
+        }));
+      }
+
+      function humanUptime(ms) {
+        const s = Math.floor(ms / 1000);
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const sec = s % 60;
+        return `${h}h${String(m).padStart(2, "0")}m${String(sec).padStart(2, "0")}s`;
+      }
+
+      function useMetrics(intervalMs) {
+        const [metrics, setMetrics] = useState(null);
+
+        useEffect(() => {
+          let cancelled = false;
+
+          async function poll() {
+            try {
+              const res = await fetch("/api/metrics");
+              const data = await res.json();
+              if (!cancelled) setMetrics(data);
+            } catch (err) {
+              if (!cancelled) setMetrics(null);
+            }
+          }
+
+          poll();
+          const id = setInterval(poll, intervalMs);
+          return () => {
+            cancelled = true;
+            clearInterval(id);
+          };
+        }, [intervalMs]);
+
+        return metrics;
+      }
+
+      function App() {
+        const metrics = useMetrics(1000);
+        const [pipelineText, setPipelineText] = useState(
+          "almaty = value(43.2389, 76.8897) | weather; astana = value(51.1801, 71.4460) | weather; max(almaty,astana)",
+        );
+        const [nodes, setNodes] = useState([]);
+        const [edges, setEdges] = useState([]);
+        const [parseError, setParseError] = useState(null);
+
+        async function submitPipeline(endpoint, text) {
+          try {
+            const res = await fetch(endpoint, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ pipeline: text }),
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+              setParseError(data.error || "request failed");
+              return;
+            }
+
+            setParseError(null);
+            setNodes(toFlowNodes(data.nodes));
+            setEdges(data.edges);
+          } catch (err) {
+            setParseError("request failed");
+          }
+        }
+
+        function handleParse() {
+          submitPipeline("/api/parse", pipelineText);
+        }
+
+        function handleRun() {
+          submitPipeline("/api/run", pipelineText);
+        }
+
+        function handleClear() {
+          setPipelineText("");
+          submitPipeline("/api/parse", "");
+        }
+
+        return html`
+          <div class="app">
+            <div class="canvas">
+              <${ReactFlow}
+                nodeTypes=${nodeTypes}
+                nodes=${nodes}
+                edges=${edges}
+                fitView
+                proOptions=${{ hideAttribution: false }}
+                nodesDraggable=${false}
+                nodesConnectable=${false}
+                edgesReconnectable=${false}
+                elementsSelectable=${false}
+              >
+                <${Background} color="#2a2a2f" gap=${18} />
+                <${Controls} showInteractive=${false} />
+              <//>
+            </div>
+            <div class="footer">
+              <div class="footer-stats">
+                <div class="stat">
+                  <span>uptime</span>
+                  <span
+                    >${metrics ? humanUptime(metrics.uptime_ms) : "..."}</span
+                  >
+                </div>
+                <div class="stat">
+                  <span>cpu temp</span>
+                  <span>${metrics ? `${metrics.cpu_temp_c}C` : "..."}</span>
+                </div>
+                <div class="stat">
+                  <span>cpu freq</span>
+                  <span>${metrics ? `${metrics.cpu_mhz}MHz` : "..."}</span>
+                </div>
+                <div class="stat">
+                  <span>ram</span>
+                  <span
+                    >${metrics
+                      ? `${Math.round((metrics.ram_used / metrics.ram_total) * 100)}%`
+                      : "..."}</span
+                  >
+                </div>
+              </div>
+              <input
+                class="pipeline-input ${parseError ? "error" : ""}"
+                type="text"
+                value=${pipelineText}
+                title=${parseError || ""}
+                onInput=${(e) => setPipelineText(e.target.value)}
+              />
+              <div class="footer-actions">
+                <button class="btn" onClick=${handleClear}>clear</button>
+                <button class="btn" onClick=${handleParse}>parse</button>
+                <button class="btn primary" onClick=${handleRun}>run</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      createRoot(document.getElementById("root")).render(
+        React.createElement(App),
+      );
+    </script>
+  </body>
+</html>
